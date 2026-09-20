@@ -1,0 +1,23 @@
+# 屏蔽所有真实配置文件，仅放行示例模板
+configs/*.yaml
+!configs/*.example.yaml
+config.yaml
+.env
+
+# 运行时数据与缓存
+cursor.dat
+temp_quarantine/
+*.log
+*.bin
+
+# Python 运行环境
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 系统文件
+.DS_Store
+*.deb
+pending_tasks.json
+!configs/*.example.yaml

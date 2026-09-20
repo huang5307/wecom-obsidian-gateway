@@ -1,0 +1,5 @@
+corp_id: YOUR_CORP_ID
+kf_secret: YOUR_KF_SECRET
+token: YOUR_CALLBACK_TOKEN
+encoding_aes_key: YOUR_ENCODING_AES_KEY
+open_kfid: YOUR_OPEN_KFID

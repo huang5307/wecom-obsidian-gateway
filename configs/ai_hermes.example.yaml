@@ -1,0 +1,4 @@
+api_base: http://127.0.0.1:11434/v1
+model: hermes-agent
+api_key: a36f5da6787d7c5b1de6abd7ce3b908f92768e0bb0b8ee214c95bcfc1fe7275f
+system_prompt: 你是个人专属知识库助理...

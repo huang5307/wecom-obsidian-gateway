@@ -1,0 +1,9 @@
+endpoint_url: https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+access_key_id: YOUR_R2_ACCESS_KEY_ID
+secret_access_key: YOUR_R2_SECRET_ACCESS_KEY
+bucket_name: obsidian-vault
+default_folder: 9-稍后处理
+aliases:
+  9,收件箱,临时,稍后,inbox: 9-稍后处理
+  1,信息,收集: 1-信息收集
+  2,价值: 2-价值信息
