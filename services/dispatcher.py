@@ -157,7 +157,19 @@ class MessageDispatcher:
         await self.client.send_text_message(msg_kfid, external_userid, "⏳ 正在抓取正文及配图并转换 Markdown...")
         parsed = await fetch_url_to_markdown(url, fallback_title=fallback_title, storage=self.storage)
 
-        title = explicit_name if explicit_name else parsed["title"]
+        # 过滤微信自动生成的无效伪标题
+        crawled_title = parsed.get("title", "").strip()
+        is_fake_title = any(bad in crawled_title for bad in ["文字分享", "图片分享", "微信公众平台", "验证"])
+        
+        if explicit_name:
+            title = explicit_name
+        elif fallback_title and (is_fake_title or not crawled_title):
+            title = fallback_title
+        elif fallback_title and len(fallback_title) > 3:
+            # 微信卡片标题通常最符合人类直觉，优先采信
+            title = fallback_title
+        else:
+            title = crawled_title or fallback_title or "网页归档"
         safe_title = re.sub(r'[\r\n\t\\/:*?"<>| ]+', '_', title).strip('_') or "网页归档"
         final_base_name = safe_title
 
@@ -202,7 +214,7 @@ class MessageDispatcher:
             title_source="user_provided" if explicit_name else "meaningful_filename"
         )
 
-        saved_name = upload_res["base_name"]
+        saved_name = upload_res.get("base_name", final_base_name)
         reply_text = (
             f"✅ 网页已归档\n"
             f"📁 目录：{target_folder}/\n"
@@ -280,7 +292,7 @@ class MessageDispatcher:
                 routing_status=routing_status,
                 title_source=title_src
             )
-            saved_name = upload_res["base_name"]
+            saved_name = upload_res.get("base_name", final_base_name)
             att_name = f"{saved_name}.{ext}" if ext else saved_name
             reply_text = (
                 f"✅ 已保存\n"
@@ -527,7 +539,7 @@ class MessageDispatcher:
             )
 
             self.pending_mgr.clear_pending(external_userid)
-            saved_name = upload_res["base_name"]
+            saved_name = upload_res.get("base_name", final_base_name)
             att_name = f"{saved_name}.{ext}" if ext else saved_name
             reply_text = (
                 f"✅ 已保存\n"
@@ -569,5 +581,5 @@ class MessageDispatcher:
         await self.client.send_text_message(
             msg_kfid,
             external_userid,
-            f"📝 随手记已归档\n📁 目录：{target_folder}/\n📄 档案：{upload_res['base_name']}.md"
+            f"📝 随手记已归档\n📁 目录：{target_folder}/\n📄 档案：{upload_res.get('base_name', note_name)}.md"
         )
