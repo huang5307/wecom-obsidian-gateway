@@ -1,3 +1,73 @@
+
+# 7 个标准预设目录映射
+VALID_DIRECTORIES = {
+    "1": "1-信息收集", "1-信息收集": "1-信息收集", "信息收集": "1-信息收集",
+    "2": "2-价值信息", "2-价值信息": "2-价值信息", "价值信息": "2-价值信息",
+    "3": "3-设计实施", "3-设计实施": "3-设计实施", "设计实施": "3-设计实施",
+    "4": "4-商务管理", "4-商务管理": "4-商务管理", "商务管理": "4-商务管理",
+    "5": "5-生活随笔", "5-生活随笔": "5-生活随笔", "生活随笔": "5-生活随笔",
+    "6": "6-内容记录", "6-内容记录": "6-内容记录", "内容记录": "6-内容记录",
+    "9": "9-稍后处理", "9-稍后处理": "9-稍后处理", "稍后处理": "9-稍后处理",
+}
+
+def resolve_valid_folder(raw: str, default: str = "1-信息收集") -> str:
+    """严禁任何动态建目录：精准解析 1-9，任何非法或模板变量一律强制收敛至 default"""
+    if not raw or not isinstance(raw, str):
+        return default
+    cleaned = raw.strip().strip("/").strip()
+    if "{" in cleaned or "}" in cleaned:
+        return default
+    # 1. 精确匹配
+    if cleaned in VALID_DIRECTORIES:
+        return VALID_DIRECTORIES[cleaned]
+    # 2. 模糊匹配（处理带 emoji，如 "🛠️ 3-设计实施"）
+    for k, v in VALID_DIRECTORIES.items():
+        if k in cleaned or cleaned in v:
+            return v
+    return default
+
+
+# ==================== 目录铁律：只允许预设目录 ====================
+ALLOWED_DIRECTORIES = {
+    "1": "1-信息收集", "1-信息收集": "1-信息收集", "信息收集": "1-信息收集",
+    "2": "2-价值信息", "2-价值信息": "2-价值信息", "价值信息": "2-价值信息",
+    "3": "3-设计实施", "3-设计实施": "3-设计实施", "设计实施": "3-设计实施",
+    "4": "4-商务管理", "4-商务管理": "4-商务管理", "商务管理": "4-商务管理",
+    "5": "5-生活随笔", "5-生活随笔": "5-生活随笔", "生活随笔": "5-生活随笔",
+    "6": "6-内容记录", "6-内容记录": "6-内容记录", "内容记录": "6-内容记录",
+    "9": "9-稍后处理", "9-稍后处理": "9-稍后处理", "稍后处理": "9-稍后处理",
+}
+
+def enforce_directory_rule(target_dir: str) -> str:
+    """禁止任何动态建目录行为：非法目录一律收敛到 1-信息收集"""
+    if not target_dir or not isinstance(target_dir, str):
+        return "1-信息收集"
+    cleaned = target_dir.strip().strip("/").strip()
+    return ALLOWED_DIRECTORIES.get(cleaned, "1-信息收集")
+# ==================================================================
+
+
+# ==================== 目录白名单硬性防线 ====================
+VALID_DIR_MAP = {
+    "1": "1-信息收集", "1-信息收集": "1-信息收集", "信息收集": "1-信息收集",
+    "2": "2-价值信息", "2-价值信息": "2-价值信息", "价值信息": "2-价值信息",
+    "3": "3-设计实施", "3-设计实施": "3-设计实施", "设计实施": "3-设计实施",
+    "4": "4-商务管理", "4-商务管理": "4-商务管理", "商务管理": "4-商务管理",
+    "5": "5-生活随笔", "5-生活随笔": "5-生活随笔", "生活随笔": "5-生活随笔",
+    "6": "6-内容记录", "6-内容记录": "6-内容记录", "内容记录": "6-内容记录",
+    "9": "9-稍后处理", "9-稍后处理": "9-稍后处理", "稍后处理": "9-稍后处理",
+}
+
+def sanitize_target_dir(raw_dir: str) -> str:
+    """终极守门人：非白名单目录一律强制收敛为 1-信息收集"""
+    if not raw_dir or not isinstance(raw_dir, str):
+        return "1-信息收集"
+    cleaned = raw_dir.strip().strip("/").strip()
+    if "{" in cleaned or "}" in cleaned:
+        return "1-信息收集"
+    return VALID_DIR_MAP.get(cleaned, "1-信息收集")
+# ==========================================================
+
 import os
 import re
 import boto3
@@ -11,6 +81,45 @@ import logging
 logger = logging.getLogger("R2Storage")
 
 class R2Storage(BaseStorage):
+
+    VALID_DIRECTORIES = {
+        "1": "1-信息收集", "1-信息收集": "1-信息收集", "信息收集": "1-信息收集",
+        "2": "2-价值信息", "2-价值信息": "2-价值信息", "价值信息": "2-价值信息",
+        "3": "3-设计实施", "3-设计实施": "3-设计实施", "设计实施": "3-设计实施",
+        "4": "4-商务管理", "4-商务管理": "4-商务管理", "商务管理": "4-商务管理",
+        "5": "5-生活随笔", "5-生活随笔": "5-生活随笔", "生活随笔": "5-生活随笔",
+        "6": "6-内容记录", "6-内容记录": "6-内容记录", "内容记录": "6-内容记录",
+        "9": "9-稍后处理", "9-稍后处理": "9-稍后处理", "稍后处理": "9-稍后处理",
+    }
+
+    def resolve_folder(self, instruction: str) -> tuple:
+        if not instruction or not isinstance(instruction, str):
+            return "1-信息收集", ""
+        ins = instruction.strip().strip("/").strip()
+        # 铁律：未解析变量或非法字符，绝对强制收敛为 1-信息收集
+        if "{" in ins or "}" in ins:
+            return "1-信息收集", ""
+        if ins in self.VALID_DIRECTORIES:
+            return self.VALID_DIRECTORIES[ins], ""
+        for k, v in self.VALID_DIRECTORIES.items():
+            if k in ins or ins in v:
+                return v, ""
+        return "1-信息收集", ""
+
+    def sanitize_folder(self, folder: str) -> str:
+        return self.resolve_folder(folder)[0]
+
+
+    VALID_DIRECTORIES = {
+        "1": "1-信息收集", "1-信息收集": "1-信息收集", "信息收集": "1-信息收集",
+        "2": "2-价值信息", "2-价值信息": "2-价值信息", "价值信息": "2-价值信息",
+        "3": "3-设计实施", "3-设计实施": "3-设计实施", "设计实施": "3-设计实施",
+        "4": "4-商务管理", "4-商务管理": "4-商务管理", "商务管理": "4-商务管理",
+        "5": "5-生活随笔", "5-生活随笔": "5-生活随笔", "生活随笔": "5-生活随笔",
+        "6": "6-内容记录", "6-内容记录": "6-内容记录", "内容记录": "6-内容记录",
+        "9": "9-稍后处理", "9-稍后处理": "9-稍后处理", "稍后处理": "9-稍后处理",
+    }
+
     def __init__(self, config: dict):
         r2_cfg = config.get("r2") if isinstance(config.get("r2"), dict) else config
         self.bucket_name = r2_cfg["bucket_name"]
@@ -52,21 +161,6 @@ class R2Storage(BaseStorage):
     def storage_name(self) -> str:
         return f"Cloudflare R2 ({self.bucket_name})"
 
-    def resolve_folder(self, raw_folder: Optional[str]) -> Tuple[str, str]:
-        if not raw_folder:
-            return self._default_folder, "default_unspecified"
-        clean_req = str(raw_folder).strip().strip("/")
-        if clean_req in self._alias_map:
-            return self._alias_map[clean_req], "normal"
-        if clean_req.lower() in self._alias_map:
-            return self._alias_map[clean_req.lower()], "normal"
-        for target in self._alias_map.values():
-            if clean_req.lower() == target.lower():
-                return target, "normal"
-        if clean_req:
-            return clean_req, "custom"
-        return self._default_folder, "default_unspecified"
-
     def exists(self, rel_path: str) -> bool:
         try:
             self.s3_client.head_object(Bucket=self.bucket_name, Key=rel_path.lstrip("/"))
@@ -82,11 +176,13 @@ class R2Storage(BaseStorage):
         return self.exists(key)
 
     def check_conflict(self, target_folder: str, base_name: str, ext: str) -> bool:
+        target_folder = self.sanitize_folder(target_folder)
         md_key = f"{target_folder}/{base_name}.md"
         att_key = f"{target_folder}/Attachments/{base_name}.{ext}" if ext else f"{target_folder}/Attachments/{base_name}"
         return self.exists(md_key) or self.exists(att_key)
 
     def save_attachment(self, filename: str, file_bytes: bytes, content_type: Optional[str] = None, target_folder: Optional[str] = None) -> str:
+        target_folder = self.sanitize_folder(target_folder)
         clean_name = os.path.basename(filename)
         folder = (target_folder or getattr(self, 'default_folder', '')).strip('/')
         key = f"{folder}/Attachments/{clean_name}" if folder else f"Attachments/{clean_name}"
