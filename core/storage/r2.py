@@ -182,13 +182,13 @@ class R2Storage(BaseStorage):
         return self.exists(md_key) or self.exists(att_key)
 
     def save_attachment(self, filename: str, file_bytes: bytes, content_type: Optional[str] = None, target_folder: Optional[str] = None) -> str:
-        target_folder = self.sanitize_folder(target_folder)
         clean_name = os.path.basename(filename)
-        folder = (target_folder or getattr(self, 'default_folder', '')).strip('/')
-        key = f"{folder}/Attachments/{clean_name}" if folder else f"Attachments/{clean_name}"
-        extra = {}
-        if content_type:
-            extra["ContentType"] = content_type
+        folder = self.sanitize_folder(target_folder or getattr(self, 'default_folder', '1-信息收集'))
+        # 鐵律：任何 .md 文檔嚴禁進入 Attachments/
+        if clean_name.lower().endswith(('.md', '.markdown')):
+            key = f"{folder}/{clean_name}" if folder else clean_name
+        else:
+            key = f"{folder}/Attachments/{clean_name}" if folder else f"Attachments/{clean_name}"
         self.s3_client.put_object(
             Bucket=self.bucket_name,
             Key=key,
@@ -251,7 +251,8 @@ processing_status: "pending"
         md_key = f"{target_folder}/{final_base_name}.md"
 
         # 【原生直通】如果本身就是 Markdown 文章/笔记，直接原样保存正文，不进 Attachments，不套引用，不加任何注记
-        if ext.lower() in ("md", "markdown"):
+        clean_ext = ext.lstrip(".").lower() if ext else ""
+        if clean_ext in ("md", "markdown"):
             self.s3_client.put_object(
                 Bucket=self.bucket_name,
                 Key=md_key,
